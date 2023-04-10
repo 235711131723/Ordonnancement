@@ -4,8 +4,8 @@ from rich.panel import Panel
 from rich.pretty import Pretty
 from uuid import uuid4
 
-from exploit.variable import Variable
-from exploit.instruction import Instruction, Assign, Operator, Read, Constant
+from systeme.variable import Variable
+from systeme.instruction import Instruction, Assign, Operator, Read, Constant
 
 class Task:
     """A 'task' will consist of only simple instructions like :

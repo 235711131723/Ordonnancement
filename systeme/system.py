@@ -13,9 +13,9 @@ import threading
 import time
 import toposort
 
-from exploit.task import Task
-from exploit.instruction import Assign, Constant
-from exploit.variable import Variable
+from systeme.task import Task
+from systeme.instruction import Assign, Constant
+from systeme.variable import Variable
 
 @contextmanager
 def timer():

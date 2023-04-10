@@ -6,10 +6,10 @@ import argparse
 import random
 import time
 
-from exploit.task import Task
-from exploit.instruction import Sleep, Assign, Add, Sub
-from exploit.system import System, Sequential, Parallelize
-from exploit.variable import Variable
+from systeme.task import Task
+from systeme.instruction import Sleep, Assign, Add, Sub
+from systeme.system import System, Sequential, Parallelize
+from systeme.variable import Variable
 
 def parse_args():
     parser = argparse.ArgumentParser()

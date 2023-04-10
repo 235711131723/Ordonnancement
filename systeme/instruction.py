@@ -2,7 +2,7 @@ from typing import *
 import operator
 import time
 
-from exploit.variable import Variable
+from systeme.variable import Variable
 
 class Instruction:
     """A prototype class used to forge simple instructions like +, -, *, /, = (assigning).
