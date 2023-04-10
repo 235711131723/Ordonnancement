@@ -13,12 +13,14 @@ from exploit.variable import Variable
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--randomize', '-r', action='store_true', help='Randomize variables.')
     parser.add_argument('--seed', '-s', type=int, default=int(time.time()), help='Set the seed for random. Default is the seconds elapsed since the EPOCH.')
 
     parser.add_argument('--test', '-t', action='store_true', help='Create multiple parallelized systems.')
+    parser.add_argument('--randomize', '-r', action='store_true', help='Randomize variables.')
+
     parser.add_argument('--sequential', action='store_true', help='Run the system as sequential.')
     parser.add_argument('--parallelize', '-p', action='store_true', help='Run the system as parallelized.')
+
     parser.add_argument('--view', '-v', action='store_true', help='View generated graphs.')
     args = parser.parse_args()
     return args
