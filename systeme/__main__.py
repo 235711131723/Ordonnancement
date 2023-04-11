@@ -2,7 +2,6 @@
 
 from rich import print
 from rich.console import Console
-from traceback import print_exception
 import argparse
 import random
 import time
@@ -99,7 +98,6 @@ def main():
 
     except (RuntimeError, ValueError) as e:
         print('[red]ERREUR: [bold]{}[/bold][/red] '.format(e))
-        print_exception(e)
     except KeyboardInterrupt:
         pass
     
