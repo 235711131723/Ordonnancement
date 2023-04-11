@@ -3,6 +3,7 @@ from rich import print
 from rich.panel import Panel
 from rich.pretty import Pretty
 from uuid import uuid4
+import copy
 
 from systeme.variable import Variable
 from systeme.instruction import Instruction, Assign, Operator, Read, Constant
@@ -101,7 +102,7 @@ class Task:
         return self.write_domain.union(self.read_domain)
 
     def __get_read_domain(self) -> Set[Variable]:
-        """Get the read domain recursively."""
+        """Get the read domain recursively throught each of its dependencies."""
 
         def recurse(i:Instruction) -> Set[Variable]:
             result = set()
@@ -116,20 +117,30 @@ class Task:
         ####################
         result = set()
 
+        # Recurse throught nested instructions
         for i in self.instructions:
             result = result.union(recurse(i))
+        
+        # Recurse throught dependencies
+        for task in self.dependencies:
+            result = result.union(task.read_domain)
         
         return result
 
     def __get_write_domain(self) -> Set[Variable]:
         """Get the write domain recursively."""
 
-        def recurse(i:Instruction) -> Set[Variable]:
+        def recurse(i:Instruction, nested:bool=False) -> Set[Variable]:
             result = set()
 
             if isinstance(i, Assign):
                 result.add(i.variable)
             elif isinstance(i, Operator) and i.variable:
+                # nested=True indicates that we are parsing nested operations with a defined variable
+                # so the variable will be read, so it is added to the read domain.
+                if nested:
+                    self.read_domain.add(i.variable)
+                result = result.union(recurse(i.i1, nested=True), recurse(i.i2, nested=True))
                 result.add(i.variable)
 
             return result
@@ -137,8 +148,13 @@ class Task:
         ####################
         result = set()
 
+        # Recurse throught nested instructions
         for i in self.instructions:
             result = result.union(recurse(i))
+
+        # Recurse throught dependencies
+        for task in self.dependencies:
+            result = result.union(task.write_domain)
         
         return result
 

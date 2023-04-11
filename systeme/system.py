@@ -31,7 +31,7 @@ class System:
         self.name = name
 
         self.tasks = []
-        tasks = tasks if tasks else []
+        tasks = copy.deepcopy(tasks) if tasks else []
         for task in tasks:
             self.add_task(task)
 
@@ -203,7 +203,7 @@ class System:
         console = Console()
         console.rule('Stats')
         if self.executed:
-            print('Time elapsed: {:.06}s'.format(self.time))
+            print('Time elapsed : {:.06}s'.format(self.time))
             print('Variables : {}'.format(self.get_memory_cells()))
         else:
             print("The system has not been runned yet.")

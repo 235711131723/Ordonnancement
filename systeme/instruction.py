@@ -11,7 +11,7 @@ class Instruction:
     then it gets converted to an instance of Instruction.
 
     Respectfully, x being the given command :
-        - str => Read(Variable(x))
+        - str => Read(Variable[x])
         - int => Constant(x)
         - Variable => Read(x)
     """
@@ -24,7 +24,7 @@ class Instruction:
         """
         raise NotImplementedError()
 
-    def __call__(*args, **kwargs) -> int:
+    def execute(*args, **kwargs) -> int:
         """Execute the instructions recursively.
 
         Raises:
@@ -64,24 +64,28 @@ class Read(Instruction):
     def __str__(self) -> str:
         return self.variable.name
     
-    def __call__(self) -> int:
+    def execute(self) -> int:
         return int(self.variable)
 
-def convert_to_variable(variable:Union[Variable, str]) -> Variable:
+def convert_to_variable(variable:Union[Variable, str, None]) -> Union[Variable, None]:
+    """Convert a string to a variable."""
+
     if isinstance(variable, str):
         variable = Variable[variable]
-    if not isinstance(variable, Variable):
-        raise ValueError("Autre chose qu'une variable a été détectée.")
+    elif variable is None: 
+        pass
+    elif not isinstance(variable, Variable):
+        raise ValueError("Something else than a Variable() instance has been detected : {}.".format(variable))
     return variable
 
 def convert_to_instruction(instruction:Union[Variable, Instruction, str, int]) -> Instruction:
     """Convert a variable, an integer, a string to an instruction."""
-    if isinstance(instruction, Variable):
+
+    if isinstance(instruction, Variable) or isinstance(instruction, str):
         # Attempt to read the given variable
-        instruction = Read(variable)
-    elif isinstance(instruction, str):
-        # Attempt to read the variable with the name
-        instruction = Read(Variable(instruction))
+        # to convert it to a variable
+        # then to an instruction
+        instruction = Read(convert_to_variable(instruction))
     elif isinstance(instruction, int):
         # Transform the integer to a Constant
         instruction = Constant(instruction)
@@ -92,7 +96,7 @@ class Assign(Instruction):
     
     This class can be used in the following ways :
     
-        Assign(Variable['x'], 10)
+        Assign(Variable('x'), 10)
         Assign('x', 10)
 
         Assign('y', 20)
@@ -101,9 +105,9 @@ class Assign(Instruction):
     Suppose the second variable has already been initialized (= contains a value).
     These are equivalent :
 
-        Assign('x', Variable['y'])
-        Assign(Variable['x'], 'y')
-        Assign(Variable['x'], Variable['y'])
+        Assign('x', Variable('y'))
+        Assign(Variable('x'), 'y')
+        Assign(Variable('x'), Variable('y'))
     """
 
     def __init__(self, variable:Union[Variable, str], instruction:Union[Variable, Instruction, str, int]):
@@ -120,10 +124,9 @@ class Assign(Instruction):
             i = '({})'.format(i)
         return '{} = {}'.format(self.variable.name, i)
 
-    def execute(self) -> Variable:
+    def execute(self):
         value = self.instruction.execute()
         self.variable.value = value
-        return self.variable
 
 ########################################
 # Operators
@@ -147,16 +150,16 @@ class Operator(Instruction):
         i1 = str(self.i1)
         i2 = str(self.i2)
 
-        if isinstance(i1, Operator):
+        if isinstance(self.i1, Operator):
             i1 = '({})'.format(i1)
-        if isinstance(i2, Operator):
+        if isinstance(self.i2, Operator):
             i2 = '({})'.format(i2)
 
         if self.operation == operator.add:
             op = '+'
         elif self.operation == operator.sub:
             op = '-'
-        elif self.operation == operator.div:
+        elif self.operation == operator.floordiv:
             op = '/'
         elif self.operation == operator.mul:
             op = '*'
@@ -167,17 +170,30 @@ class Operator(Instruction):
             return '{} = {} {} {}'.format(self.variable.name , i1, op, i2)
 
     def execute(self) -> Union[Variable, int] :
-        value = self.operation(self.i1.execute(), self.i2.execute())
+        """Returns a variable or a int.
+        
+        In the latter case, no variable has been provided to store the result.
+        Used when nesting operations inside outer ones like this (althought it is possible to store the nested result in a variable then read the variable just after) :
+
+            Add('z', Add(10, 10), 'y')
+            Add('z', Add(10, 10, 'n'), 'y')
+
+        Returns:
+            Union[Variable, int]: Returns a variable to store the result. Otherwise an integer.
+        """
+        value = self.operation(int(self.i1.execute()), int(self.i2.execute()))
         if not self.variable:
             return value
 
-        self.variable.affect(value)
+        self.variable.value = value
         return self.variable
 
     def __convert(self, instruction:Union[Variable, Instruction, str, int]) -> Instruction:
-        instruction = convert(instruction)
+        instruction = convert_to_instruction(instruction)
+        if isinstance(instruction, Assign):
+            raise ValueError("You cannot assign while performing operations.")
         if isinstance(instruction, Sleep):
-            raise ValueError("Sleep() is not an instruction compatible with basic operations.")
+            raise ValueError("Sleeping is not an instruction compatible with basic operations.")
         return instruction
 
 class Add(Operator):

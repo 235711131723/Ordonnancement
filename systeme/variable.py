@@ -11,11 +11,12 @@ class Variable:
             old = None
 
         self.name = name
-        self.history = (old.history if old else []) + [value]
+        self.history = (old.history if old else [])
         self._value = value
 
-        # Add itself to the list of variables,
-        # otherwise overwrite the existing one based on the name.
+        # Keep track of every created variable.
+        # If a variable with a name already exists,
+        # just overwrite it.
         self.__class__.VARIABLES[self.name] = self
 
     def __hash__(self) -> int:
@@ -49,6 +50,14 @@ class Variable:
         return '<Variable({}={})>'.format(self.name, self.value)
 
     def __int__(self) -> int:
+        """Returns the value of the variable.
+
+        Raises:
+            ValueError: Raised when the variable has not been initialized, i.e. value is None.
+
+        Returns:
+            int: The value. Raises an exception if not initialized.
+        """
         if not self.value:
             raise ValueError("The variable {} has not been initialized.".format(self))
         return int(self.value)
@@ -62,7 +71,7 @@ class Variable:
         self.history = []
 
     @property
-    def value(self) -> int:
+    def value(self) -> Optional[int]:
         return self._value
 
     @value.setter
