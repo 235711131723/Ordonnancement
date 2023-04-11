@@ -65,6 +65,14 @@ class Read(Instruction):
         return self.variable.name
     
     def execute(self) -> int:
+        """Attempt to read the variable.
+
+        Raises:
+            ValueError: raise when the variable is not initialized.
+
+        Returns:
+            int: The value stored in the variable.
+        """
         return int(self.variable)
 
 def convert_to_variable(variable:Union[Variable, str, None]) -> Union[Variable, None]:
