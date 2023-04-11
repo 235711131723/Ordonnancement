@@ -40,7 +40,7 @@ def main():
 
     try:
         t1 = Task([
-            Assign('x', 10),
+            Assign('x', Add(10, 30)),
             Sleep(1)
         ])
         t2 = Task([

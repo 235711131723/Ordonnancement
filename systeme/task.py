@@ -82,17 +82,17 @@ class Task:
 
         self.executed = True
 
-    def set_dependencies(self, dependencies:Union['Task', Iterable['Task']]):
+    @property
+    def dependencies(self) -> Iterable['Task']:
+        return self._dependencies
+
+    @dependencies.setter
+    def dependencies(self, dependencies:Union['Task', Iterable['Task']]):
         if isinstance(dependencies, Task):
             self._dependencies = set([dependencies])
         else:
             self._dependencies = set(dependencies)
 
-    def get_dependencies(self) -> Iterable['Task']:
-        return self._dependencies
-
-    dependencies = property(get_dependencies, set_dependencies)
-            
     def get_memory_cells(self) -> Set[Variable]:
         """Returns every memory cells used by the task.
 
@@ -114,7 +114,6 @@ class Task:
 
             return result
 
-        ####################
         result = set()
 
         # Recurse throught nested instructions
@@ -145,7 +144,6 @@ class Task:
 
             return result
 
-        ####################
         result = set()
 
         # Recurse throught nested instructions
