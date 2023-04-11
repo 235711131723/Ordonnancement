@@ -39,11 +39,9 @@ def main():
     try:
         t1 = Task([
             Assign('x', Add(10, 30)),
-            Sleep(1)
         ])
         t2 = Task([
             Assign('y', 10),
-            Sleep(1)
         ], dependencies=t1)
         t3 = Task([
             Assign('z', 10),
@@ -69,11 +67,16 @@ def main():
             else:
                 print('The test is [green bold]valid[/green bold].')
 
-        system.run(loops=args.loops)
-
         if args.parallelize:
             parallel = Parallelize(system)
             parallel.draw(view=args.view)
+
+        if args.sequential:
+            sequential = Sequential(system)
+            sequential.draw(view=args.view)
+
+        system.run(loops=args.loops)
+        if args.parallelize:
             parallel.run(loops=args.loops)
             if system.is_equivalent(parallel):
                 print('The system and the parallelized one are [green bold]equivalent[/green bold].')
@@ -81,8 +84,6 @@ def main():
                 print('The system and the parallelized one are [red bold]not equivalent[/red bold].')
 
         if args.sequential:
-            sequential = Sequential(system)
-            sequential.draw(view=args.view)
             sequential.run(loops=args.loops)
             if system.is_equivalent(sequential):
                 print('The system and the sequential one are [green bold]equivalent[/green bold].')

@@ -175,14 +175,26 @@ class System:
 
     def draw(self, view:bool=False):
         dot = graphviz.Digraph(comment='Graph of "{}"'.format(self.name))
-        for layer in self.get_layers():
-            for task in layer:
-                dot.node(
-                    name=str(task.name),
-                    label=self.__generate_label(task)
-                )
-                for parent in task.dependencies:
-                    dot.edge(tail_name=str(parent.name), head_name=str(task.name))
+        layers = self.get_layers()
+        for i, layer in enumerate(layers):
+            # Place the last tasks at the same level
+            # because threads are executed this way
+            if i == len(layers) - 1:
+                with dot.subgraph() as subgraph:
+                    subgraph.attr(rank='max')
+                    for task in layer:
+                        subgraph.node(
+                            name=str(task.name),
+                            label=self.__generate_label(task),
+                        )
+            else:
+                for task in layer:
+                    dot.node(
+                        name=str(task.name),
+                        label=self.__generate_label(task),
+                    )
+            for parent in task.dependencies:
+                dot.edge(tail_name=str(parent.name), head_name=str(task.name))
 
         filename = pathvalidate.sanitize_filepath(self.name)
         dot.render(filename + '.gv', view=view)
@@ -210,8 +222,8 @@ class System:
         """
         levels = []
 
-        explored = set()
-        level = self.get_final_tasks()
+        level = set(self.get_final_tasks())
+        explored = set(level)
         while level:
             levels.insert(0, level)
             children = set()
