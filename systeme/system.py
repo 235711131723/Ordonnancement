@@ -39,6 +39,10 @@ class System:
         self.time = None
         self.history = {}
 
+        self.executions = 0
+        self.times = []
+        self.histories = []
+
     def add_task(self, task:Task):
         try:
             existing_task = next((t for t in self.tasks if t == task))
@@ -117,6 +121,23 @@ class System:
                 return False
 
         return True
+
+    def are_histories_equal(self) -> bool:
+        """Check if every and each one of the histories is equal to each other.
+        The system must have been executed more than once.
+
+        Raises:
+            RuntimeError: Raise when conditions are not met.
+
+        Returns:
+            bool: Check if every and each one of the histories is equal to each other.
+        """
+        if not self.executed:
+            raise RuntimeError('The system has not been executed yet.')
+        if self.executions == 1:
+            raise RuntimeError('The system has been executed only once.')
+        return self.histories.count(self.histories[0]) == len(self.histories)
+
     
     ########################################
     # Drawing graphs
@@ -199,12 +220,17 @@ class System:
     ########################################
     # Stats
     ########################################
-    def show(self):
+    def show(self, show_all:bool=False):
         console = Console()
         console.rule('Stats')
         if self.executed:
             print('Time elapsed : {:.06}s'.format(self.time))
-            print('Variables : {}'.format(self.get_memory_cells()))
+            print('Last variables state: {}'.format(self.get_memory_cells()))
+
+            if show_all and self.executions > 1:
+                print('Mean time elapsed : ~{:.06}s'.format(sum(self.times) / len(self.times)))
+                print('Histories :')
+                pprint(self.histories)
         else:
             print("The system has not been runned yet.")
 
@@ -227,10 +253,13 @@ class System:
                         instruction.instruction.value = new_value
 
     def reset_memory_cells(self):
+        """Empty every variable from their history and their value."""
         for cell in self.get_memory_cells():
             cell.reset()
 
     def reset_tasks_state(self):
+        """Set all tasks as non-executed.
+        """
         for task in self.tasks:
             task.executed = False
 
@@ -239,10 +268,18 @@ class System:
         self.reset_tasks_state()
 
     def save_history(self):
+        """Save the last state of variables.
+
+        Also save them in dedicated arrays for future analysis.
+        """
         self.history = {cell.name: cell for cell in copy.deepcopy(self.get_memory_cells())}
         self.executed = True
 
-    def run(self, verbose:bool=True):
+        self.executions += 1
+        self.histories.append(self.history)
+        self.times.append(self.time)
+
+    def run(self, loops:int=1, verbose:bool=True):
         """Run the tasks with threads."""
         def execute_tasks_parallel(tasks):
             threads = []
@@ -262,11 +299,20 @@ class System:
             console = Console()
             console.rule(title=self.name)
 
-        self.reset()
-        with timer() as measure_time:
-            execute_tasks_parallel(self.get_final_tasks())
-        self.time = measure_time()
-        self.save_history()
+        for loop in range(loops):
+            if verbose and loops > 1:
+                console.rule('#{}/{}'.format(loop + 1, loops))
+            self.reset()
+            with timer() as measure_time:
+                execute_tasks_parallel(self.get_final_tasks())
+            self.time = measure_time()
+            self.save_history()
+
+            if verbose:
+                if loop == loops - 1:
+                    self.show(show_all=True)
+                else:
+                    self.show()
         
 class Sequential(System):
     def __init__(self, system:System):

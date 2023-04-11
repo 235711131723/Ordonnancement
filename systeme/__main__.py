@@ -16,7 +16,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', '-s', type=int, default=int(time.time()), help='Set the seed for random. Default is the seconds elapsed since the EPOCH.')
 
-    parser.add_argument('--repeat', type=int, default=1, help='[NOT IMPLEMENTED] Repeat the execution of the system(s).')
+    parser.add_argument('--loops', type=int, default=1, help='[NOT IMPLEMENTED] Repeat the execution of the system(s).')
 
     parser.add_argument('--test', '-t', action='store_true', help='Create multiple parallelized systems.')
     parser.add_argument('--randomize', '-r', action='store_true', help='Randomize variables.')
@@ -28,8 +28,8 @@ def parse_args():
     parser.add_argument('--view', '-v', action='store_true', help='View generated graphs.')
     args = parser.parse_args()
 
-    if args.repeat <= 0:
-        raise argparse.ArgumentTypeError('--repeat must be > 0.')
+    if args.loops <= 0:
+        raise argparse.ArgumentTypeError('--loops must be > 0.')
     return args
 
 def main():
@@ -58,34 +58,30 @@ def main():
         if args.randomize:
             system.randomize_variables()
         system.draw(view=args.view)
-        if args.run:
-            system.run()
-            system.show()
 
         if args.test:
             console.rule('Test')
-
-            histories = []
-            for i in range(5):
-                parallel = Parallelize(system)
-                parallel.run(verbose=False)
-                histories.append(parallel.history)
-            if not (histories.count(histories[0]) == len(histories)):
+            parallel = Parallelize(system)
+            parallel.run(loops=5, verbose=False)
+            if not parallel.are_histories_equal():
                 print('The test is [red bold]invalid[/red bold].')
+                print('Histories :')
+                pprint(parallel.histories)
             else:
                 print('The test is [green bold]valid[/green bold].')
+
+        if args.run:
+            system.run(loops=args.loops)
 
         if args.parallelize:
             parallel = Parallelize(system)
             parallel.draw(view=args.view)
-            parallel.run()
-            parallel.show()
+            parallel.run(loops=args.loops)
 
         if args.sequential:
             sequential = Sequential(system)
             sequential.draw(view=args.view)
-            sequential.run()
-            sequential.show()
+            sequential.run(loops=args.loops)
 
     except (RuntimeError, ValueError) as e:
         print('[red]ERREUR: [bold]{}[/bold][/red] '.format(e))
