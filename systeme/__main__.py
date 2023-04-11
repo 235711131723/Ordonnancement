@@ -16,7 +16,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', '-s', type=int, default=int(time.time()), help='Set the seed for random. Default is the seconds elapsed since the EPOCH.')
 
-    parser.add_argument('--loops', type=int, default=1, help='[NOT IMPLEMENTED] Repeat the execution of the system(s).')
+    parser.add_argument('--loops', type=int, default=1, help='Repeat the execution of the system(s).')
 
     parser.add_argument('--test', '-t', action='store_true', help='Create multiple parallelized systems.')
     parser.add_argument('--randomize', '-r', action='store_true', help='Randomize variables.')
