@@ -70,20 +70,6 @@ class System:
         
         return cells
 
-    def get_history_of_values(self, variable:Union[Variable, str]) -> List[Optional[int]]:
-        """Get the history of values of a variable.
-
-        Args:
-            variable (Variable): The studied variable.
-
-        Returns:
-            List[Optional[int]]: The list of the values of the variable after each instruction.
-        """
-        if isinstance(variable, str):
-            variable = self.history[variable]
-
-        return variable.history
-
     ########################################
     # System-related methods
     ########################################
@@ -92,7 +78,11 @@ class System:
 
         Args:
             system (System): The system to compare to.
+        
+        Raises:
+            RuntimeError: Raise when the systems have not been runned once.
 
+        
         Returns:
             bool: A boolean indicating their equivalency.
         """
@@ -101,13 +91,16 @@ class System:
 
         if not (self.get_memory_cells() == system.get_memory_cells()):
             return False
-        
-        if not (self.executed or system.executed):
-            raise RuntimeError("Au moins l'un des deux systèmes n'a pas exécuté les tâches.")
 
-        for name, cell in self.history.items():
-            if self.get_history_of_values(cell) != system.get_history_of_values(cell):
-                return False
+        # Check if for each history, the variables of the two systems have the same history.
+        n = min(self.executions, system.executions)
+        if n < 1:
+            raise RuntimeError('The systems have to be executed at least once.')
+
+        for i in range(min(self.executions, system.executions)):
+            for name, cell in self.histories[i].items():
+                if self.histories[i][name] != system.histories[i][name]:
+                    return False
         return True
 
     def is_deterministic(self) -> bool:

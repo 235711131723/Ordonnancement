@@ -77,11 +77,25 @@ def main():
             parallel = Parallelize(system)
             parallel.draw(view=args.view)
             parallel.run(loops=args.loops)
+            if system.is_equivalent(parallel):
+                print('The system and the parallelized one are [green bold]equivalent[/green bold].')
+            else:
+                print('The system and the parallelized one are [red bold]not equivalent[/red bold].')
 
         if args.sequential:
             sequential = Sequential(system)
             sequential.draw(view=args.view)
             sequential.run(loops=args.loops)
+            if system.is_equivalent(sequential):
+                print('The system and the sequential one are [green bold]equivalent[/green bold].')
+            else:
+                print('The system and the sequential one are [red bold]not equivalent[/red bold].')
+
+        if args.sequential and args.parallelize:
+            if parallel.is_equivalent(sequential):
+                print('The parallelized and the sequential systems are [green bold]equivalent[/green bold].')
+            else:
+                print('The parallelized and the sequential systems are [red bold]not equivalent[/red bold].')
 
     except (RuntimeError, ValueError) as e:
         print('[red]ERREUR: [bold]{}[/bold][/red] '.format(e))
