@@ -230,7 +230,7 @@ class System:
         console.rule('Stats')
         if self.executed:
             print('Time elapsed : {:.06}s'.format(self.time))
-            print('Last variables state: {}'.format(self.get_memory_cells()))
+            print('Last variables state : {}'.format(self.get_memory_cells()))
 
             if show_all and self.executions > 1:
                 print('Mean time elapsed : ~{:.06}s'.format(sum(self.times) / len(self.times)))
@@ -327,6 +327,7 @@ class System:
         for loop in range(loops):
             if verbose and loops > 1:
                 console.rule('#{}/{}'.format(loop + 1, loops))
+
             self.reset()
             with timer() as measure_time:
                 execute_tasks_parallel(self.get_final_tasks())

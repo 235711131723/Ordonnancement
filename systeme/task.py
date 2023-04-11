@@ -1,4 +1,5 @@
 from typing import *
+from datetime import datetime
 from rich import print
 from rich.panel import Panel
 from rich.pretty import Pretty
@@ -7,6 +8,15 @@ import copy
 
 from systeme.variable import Variable
 from systeme.instruction import Instruction, Assign, Operator, Read, Constant
+
+def current_time() -> str:
+    """Get the current time in HH:MM:SS.
+
+    Returns:
+        str: The date formatted in string.
+    """
+    now = datetime.now()
+    return now.strftime('[%H:%H:%S:%f]')
 
 class Task:
     """A 'task' will consist of only simple instructions like :
@@ -28,19 +38,14 @@ class Task:
         ])
     """
     ID = 1
+    Tasks = {}
 
     def __init__(self,
         instructions:Optional[List[Instruction]] = None,
         dependencies:Optional[Union['Task', Iterable['Task']]]=None,
-        name:Optional[Union[str, int]]=None
+        name:Optional[Union[str, int]]=None,
+        reset:bool=False
     ):
-        if name is not None and isinstance(name, int):
-            self.__class__.ID = name
-        else:
-            if not name:
-                name = self.__class__.ID
-                self.__class__.ID += 1
-
         self.name = name
         self.instructions = instructions if instructions else []
         self.dependencies = dependencies if dependencies else []
@@ -48,6 +53,10 @@ class Task:
 
         self.read_domain = self.__get_read_domain()
         self.write_domain = self.__get_write_domain()
+
+        if reset:
+            self.__class__.Tasks = {}
+        self.__class__.Tasks[self.name] = self
 
     def __repr__(self) -> str:
         return 'Task({})'.format(self.name)
@@ -66,17 +75,34 @@ class Task:
 
         return self.name < o.name
 
+    @property
+    def name(self) -> Union[str, int]:
+        return self._name
+    
+    @name.setter
+    def name(self, name:Optional[Union[str, int]]=None):
+        """Increment the ID if no name is given.
+        Otherwise, if the name is an integer, reset the ID counter as the name."""
+
+        if name is None:
+            name = self.__class__.ID
+            self.__class__.ID += 1
+        else:
+            if isinstance(name, int):
+                self.__class__.ID = name
+        self._name = name
+
     def execute(self, verbose:bool=True):
         """Execute the instructions sequentially."""
 
         for i, instruction in enumerate(self.instructions):
             if verbose:
-                print('{} : [red]Starting [bold]{}[/bold][/red]...'.format(str(self), str(instruction)))
+                print('{} {} : [red]Starting [bold]{}[/bold][/red]...'.format(current_time(), str(self), str(instruction)))
                 instruction.execute()
                 if i < len(self.instructions) - 1:
-                    print('{} : [green]Finished [bold]{}[/bold][/green].'.format(str(self), str(instruction)))
+                    print('{} {} : [green]Finished [bold]{}[/bold][/green].'.format(current_time(), str(self), str(instruction)))
                 else:
-                    print('[strike]{}[/strike] : [green]Finished [bold]{}[/bold][/green].'.format(str(self), str(instruction)))
+                    print('{} [strike]{}[/strike] : [green]Finished [bold]{}[/bold][/green].'.format(current_time(), str(self), str(instruction)))
             else:
                 instruction.execute()
 
@@ -102,7 +128,9 @@ class Task:
         return self.write_domain.union(self.read_domain)
 
     def __get_read_domain(self) -> Set[Variable]:
-        """Get the read domain recursively throught each of its dependencies."""
+        """Get the read domain recursively.
+        
+        NOTE : only for this task, as well for the write domain."""
 
         def recurse(i:Instruction) -> Set[Variable]:
             result = set()
@@ -119,10 +147,6 @@ class Task:
         # Recurse throught nested instructions
         for i in self.instructions:
             result = result.union(recurse(i))
-        
-        # Recurse throught dependencies
-        for task in self.dependencies:
-            result = result.union(task.read_domain)
         
         return result
 
@@ -150,10 +174,6 @@ class Task:
         for i in self.instructions:
             result = result.union(recurse(i))
 
-        # Recurse throught dependencies
-        for task in self.dependencies:
-            result = result.union(task.write_domain)
-        
         return result
 
     def is_connected(self, task:'Task') -> bool:
@@ -226,3 +246,12 @@ class Task:
         """
         panel = Panel(Pretty([str(instruction) for instruction in self.instructions], expand_all=True), title=str(self))
         return panel
+
+    @staticmethod
+    def get_tasks() -> List['Task']:
+        """Return all the tasks stored automatically in the dict.
+
+        Returns:
+            List['Task']: The list of every tasks.
+        """
+        return list(Task.Tasks.values())

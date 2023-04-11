@@ -20,7 +20,6 @@ def parse_args():
     parser.add_argument('--test', '-t', action='store_true', help='Create multiple parallelized systems.')
     parser.add_argument('--randomize', '-r', action='store_true', help='Randomize variables.')
 
-    parser.add_argument('--run', action='store_true', help='Run the system as it is.')
     parser.add_argument('--sequential', action='store_true', help='Run the system as sequential.')
     parser.add_argument('--parallelize', '-p', action='store_true', help='Run the system as parallelized.')
 
@@ -48,12 +47,13 @@ def main():
         ], dependencies=t1)
         t3 = Task([
             Assign('z', 10),
-        ], dependencies=t2)
+            Sleep(1)
+        ], dependencies=[t2])
         t4 = Task([
-            Add('z', Mul(10, 10, 'n'), 'y')
-        ], dependencies=t3)
+            Add('x', Add(10, 10, 'n'), 'z')
+        ], dependencies=[t3])
 
-        system = System(tasks=[t1, t2, t3, t4])
+        system = System(tasks=list(Task.get_tasks()))
         if args.randomize:
             system.randomize_variables()
         system.draw(view=args.view)
@@ -69,8 +69,7 @@ def main():
             else:
                 print('The test is [green bold]valid[/green bold].')
 
-        if args.run:
-            system.run(loops=args.loops)
+        system.run(loops=args.loops)
 
         if args.parallelize:
             parallel = Parallelize(system)
