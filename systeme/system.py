@@ -224,7 +224,7 @@ class System:
                 continue
 
         for task in initial_tasks.difference(final_tasks):
-            for t1, t2 in itertools.permutations(final_tasks, r=2):
+            for t1, t2 in itertools.product(final_tasks, repeat=2):
                 c1 = t1.is_connected(task)
                 c2 = t2.is_connected(task)
                 if not c1 and c2:
