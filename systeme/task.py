@@ -2,7 +2,7 @@ from typing import *
 from datetime import datetime
 from rich import print
 from rich.panel import Panel
-from rich.pretty import Pretty
+from rich.pretty import Pretty, pprint
 from uuid import uuid4
 import copy
 
@@ -237,15 +237,10 @@ class Task:
             and not self.write_domain.intersection(task.write_domain),
 
             self.is_connected(task) or task.is_connected(self)
+            #self in task.dependencies or task in self.dependencies
         ]
 
         return not (conditions[0] or conditions[1])
-
-    def panel(self) -> Panel:
-        """Show all instructions and the name of the task.
-        """
-        panel = Panel(Pretty([str(instruction) for instruction in self.instructions], expand_all=True), title=str(self))
-        return panel
 
     @staticmethod
     def get_tasks() -> List['Task']:
@@ -255,3 +250,12 @@ class Task:
             List['Task']: The list of every tasks.
         """
         return list(Task.Tasks.values())
+    
+    def show(self):
+        print('Task :', self)
+        print('Read domain :')
+        pprint(self.read_domain)
+        print('Write domain :')
+        pprint(self.write_domain)
+        print('Instructions :')
+        pprint([str(instruction) for instruction in self.instructions], expand_all=True)

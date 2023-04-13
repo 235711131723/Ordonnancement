@@ -39,9 +39,11 @@ def main():
     try:
         t1 = Task([
             Assign('x', Add(10, 30)),
+            Sleep(1)
         ])
         t2 = Task([
             Assign('y', 10),
+            Sleep(1)
         ], dependencies=t1)
         t3 = Task([
             Assign('z', 10),
@@ -49,6 +51,9 @@ def main():
         ], dependencies=[t2])
         t4 = Task([
             Add('x', Add(10, 10, 'n'), 'z')
+        ], dependencies=[t3])
+        t5 = Task([
+            Sleep(1)
         ], dependencies=[t3])
 
         system = System(tasks=list(Task.get_tasks()))

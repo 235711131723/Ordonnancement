@@ -24,7 +24,8 @@ class Variable:
         return hash(self.name)
 
     def __eq__(self, o:Any) -> bool:
-        # * Variables will be compared by their name
+        # Variables will be compared by their name
+        # Used for sets
         if not isinstance(o, Variable):
             return False
         return self.name == o.name

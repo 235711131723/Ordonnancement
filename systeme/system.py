@@ -99,7 +99,7 @@ class System:
 
         for i in range(min(self.executions, system.executions)):
             for name, cell in self.histories[i].items():
-                if self.histories[i][name] != system.histories[i][name]:
+                if self.histories[i][name].value != system.histories[i][name].value:
                     return False
         return True
 
@@ -129,8 +129,11 @@ class System:
             raise RuntimeError('The system has not been executed yet.')
         if self.executions == 1:
             raise RuntimeError('The system has been executed only once.')
-        return self.histories.count(self.histories[0]) == len(self.histories)
-
+        for name, cell in self.get_memory_cells():
+            for i, j in itertools.combinations(range(self.executions), r=2):
+                if self.histories[i][name].value != self.histories[j][name].value:
+                    return False
+        return True
     
     ########################################
     # Drawing graphs
@@ -187,14 +190,16 @@ class System:
                             name=str(task.name),
                             label=self.__generate_label(task),
                         )
+                        for parent in task.dependencies:
+                            dot.edge(tail_name=str(parent.name), head_name=str(task.name))
             else:
                 for task in layer:
                     dot.node(
                         name=str(task.name),
                         label=self.__generate_label(task),
                     )
-            for parent in task.dependencies:
-                dot.edge(tail_name=str(parent.name), head_name=str(task.name))
+                    for parent in task.dependencies:
+                        dot.edge(tail_name=str(parent.name), head_name=str(task.name))
 
         filename = pathvalidate.sanitize_filepath(self.name)
         dot.render(filename + '.gv', view=view)
@@ -203,15 +208,23 @@ class System:
     # Tasks
     ########################################
     def get_final_tasks(self) -> Set[Task]:
-        """Get tasks at the most bottom-level."""
+        """Get tasks at the most bottom-level.
+        
+        Returns:
+            List[Task]: Every most-bottom level tasks with orphan tasks placed first."""
         tasks = []
         for task in self.tasks:
             for t in self.tasks:
                 if task in t.dependencies:
                     break
             else:
-                tasks.append(task)
-        return tasks
+                # Put orphan tasks first.
+                if not task.dependencies:
+                    tasks.insert(0, task)
+                else:
+                    tasks.append(task)
+
+        return set(tasks)
     
     def get_layers(self) -> List[Set[Task]]:
         """Get every tasks layer by layer.
@@ -315,6 +328,8 @@ class System:
             Once there is not any dependency left, the threads will finally start.
             Thus, the first threads to start are the one corresponding to the top-level tasks.
 
+            NOTE : does not work properly with disconnected graphs.
+
             Args:
                 tasks (Set[Task]): The tasks to recurse from.
             """
@@ -326,7 +341,7 @@ class System:
                     threads.append(thread)
 
                 # Recurse throught every dependencies
-                execute_tasks_parallel(task.dependencies)  
+                execute_tasks_parallel(task.dependencies)
             for thread in threads:
                 thread.start()
             for thread in threads:
@@ -342,7 +357,7 @@ class System:
 
             self.reset()
             with timer() as measure_time:
-                execute_tasks_parallel(self.get_final_tasks())
+                execute_tasks_parallel(tasks=self.get_final_tasks())
             self.time = measure_time()
             self.save_history()
 
