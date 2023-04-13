@@ -129,9 +129,9 @@ class System:
             raise RuntimeError('The system has not been executed yet.')
         if self.executions == 1:
             raise RuntimeError('The system has been executed only once.')
-        for name, cell in self.get_memory_cells():
+        for cell in self.get_memory_cells():
             for i, j in itertools.combinations(range(self.executions), r=2):
-                if self.histories[i][name].value != self.histories[j][name].value:
+                if self.histories[i][cell.name].value != self.histories[j][cell.name].value:
                     return False
         return True
     
@@ -207,7 +207,13 @@ class System:
     ########################################
     # Tasks
     ########################################
-    def disconnected_tasks(self) -> List[Set[Task]]:
+    def disconnected_final_tasks(self) -> List[Set[Task]]:
+        """Group final tasks by their respective disconnected subgraphs.
+        
+        Returns:
+            List[Set[Task]]: Every group of tasks which all have different parents, or are themselves orphans.
+        """
+
         final_tasks = self.get_final_tasks()
         initial_tasks = self.get_initial_tasks()
         graphs = {task: set() for task in initial_tasks}
@@ -237,7 +243,6 @@ class System:
                         graphs[task].add(t1)
                 elif c1 and c2:
                     graphs[task] = graphs[task].union([t1, t2])
-        pprint(graphs,  expand_all=True)
         return list(graphs.values())
 
     def get_final_tasks(self) -> Set[Task]:
@@ -387,8 +392,6 @@ class System:
             for thread in threads:
                 thread.join()
             
-        print(self.disconnected_tasks())
-
         if verbose:
             console = Console()
             console.rule(title=self.name)
@@ -399,7 +402,13 @@ class System:
 
             self.reset()
             with timer() as measure_time:
-                execute_tasks_parallel(tasks=self.get_final_tasks())
+                threads = []
+                for block in self.disconnected_final_tasks():
+                    thread = threading.Thread(target=execute_tasks_parallel, args=(block,))
+                    thread.start()
+                    threads.append(thread)
+                for thread in threads:
+                    thread.join()
             self.time = measure_time()
             self.save_history()
 
