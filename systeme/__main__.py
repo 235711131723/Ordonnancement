@@ -38,7 +38,7 @@ def main():
 
     try:
         t1 = Task([
-            Assign('x', Add(10, 30)),
+            Assign('x', 30),
             Sleep(1)
         ])
         t2 = Task([
@@ -48,13 +48,18 @@ def main():
         t3 = Task([
             Assign('z', 10),
             Sleep(1)
-        ], dependencies=[t2])
+        ], dependencies=[t1])
         t4 = Task([
-            Add('x', Add(10, 10, 'n'), 'z')
-        ], dependencies=[t3])
+            Add(10, 40, 'z'),
+            Sleep(1)
+        ], dependencies=[t2, t3])
         t5 = Task([
+            Assign('o', 100),
             Sleep(1)
         ], dependencies=[t3])
+        t6 = Task([
+            Assign('o', 1000),
+        ], dependencies=[t4, t5])
 
         system = System(tasks=list(Task.get_tasks()))
         if args.randomize:
