@@ -207,6 +207,39 @@ class System:
     ########################################
     # Tasks
     ########################################
+    def disconnected_tasks(self) -> List[Set[Task]]:
+        final_tasks = self.get_final_tasks()
+        initial_tasks = self.get_initial_tasks()
+        graphs = {task: set() for task in initial_tasks}
+
+        for task in final_tasks:
+            if not task.dependencies:
+                graphs[task].add(task)
+                continue
+
+        for task in initial_tasks.difference(final_tasks):
+            for t1, t2 in itertools.permutations(final_tasks, r=2):
+                c1 = t1.is_connected(task)
+                c2 = t2.is_connected(task)
+                if not c1 and c2:
+                    for k, v in graphs.items():
+                        if t2 in v:
+                            graphs[k].add(t2)
+                            break 
+                    else:
+                        graphs[task].add(t2)
+                elif c1 and not c2:
+                    for k, v in graphs.items():
+                        if t1 in v:
+                            graphs[k].add(t1)
+                            break 
+                    else:
+                        graphs[task].add(t1)
+                elif c1 and c2:
+                    graphs[task] = graphs[task].union([t1, t2])
+        pprint(graphs,  expand_all=True)
+        return list(graphs.values())
+
     def get_final_tasks(self) -> Set[Task]:
         """Get tasks at the most bottom-level.
         
@@ -225,7 +258,14 @@ class System:
                     tasks.append(task)
 
         return set(tasks)
-    
+
+    def get_initial_tasks(self) -> Set[Task]:
+        """Get topmost-level tasks.
+        
+        Returns:
+            Set[Task]: Every initial tasks."""
+        return set(task for task in self.tasks if not task.dependencies)
+        
     def get_layers(self) -> List[Set[Task]]:
         """Get every tasks layer by layer.
         Solely used for generating graphs. 
@@ -346,6 +386,8 @@ class System:
                 thread.start()
             for thread in threads:
                 thread.join()
+            
+        print(self.disconnected_tasks())
 
         if verbose:
             console = Console()
