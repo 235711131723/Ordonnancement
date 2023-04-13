@@ -97,12 +97,12 @@ class Task:
 
         for i, instruction in enumerate(self.instructions):
             if verbose:
-                print('{} {} : [red]Starting [bold]{}[/bold][/red]...'.format(current_time(), str(self), str(instruction)))
+                print('[red]{}[/red] {} : [red]Starting [bold]{}[/bold][/red]...'.format(current_time(), str(self), str(instruction)))
                 instruction.execute()
                 if i < len(self.instructions) - 1:
-                    print('{} {} : [green]Finished [bold]{}[/bold][/green].'.format(current_time(), str(self), str(instruction)))
+                    print('[green]{}[/green] {} : [green]Finished [bold]{}[/bold][/green].'.format(current_time(), str(self), str(instruction)))
                 else:
-                    print('{} [strike]{}[/strike] : [green]Finished [bold]{}[/bold][/green].'.format(current_time(), str(self), str(instruction)))
+                    print('[green]{}[/green] [strike]{}[/strike] : [green]Finished [bold]{}[/bold][/green].'.format(current_time(), str(self), str(instruction)))
             else:
                 instruction.execute()
 
