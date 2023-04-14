@@ -22,16 +22,23 @@ def timer():
     start = time.time()
     yield lambda: time.time() - start
 
+class NotDeterministic(ValueError):
+    """Test"""
+
 class System:
     """A class to implement a system of tasks.
-    It MUST be determistic.
+
+    It is expected to be :
+    - Deterministic
+    - Consistent (= every history of variables must be equal)
+    - Acyclic (= no cycle shall ever be found)
     """
 
     def __init__(self, name:str='System', tasks:Optional[List[Task]]=None):
         self.name = name
 
         self.tasks = []
-        tasks = copy.deepcopy(tasks) if tasks else []
+        tasks = tasks if tasks else []
         for task in tasks:
             self.add_task(task)
 
@@ -43,6 +50,9 @@ class System:
         self.times = []
         self.histories = []
 
+    ########################################
+    # Tasks
+    ########################################
     def add_task(self, task:Task):
         try:
             existing_task = next((t for t in self.tasks if t == task))
@@ -54,9 +64,6 @@ class System:
         if not self.is_deterministic():
             raise RuntimeError("The system is not determined.")
 
-    ########################################
-    # Tasks
-    ########################################
     def get_memory_cells(self) -> Set[Variable]:
         """Get variables used by every tasks.
 
@@ -73,6 +80,29 @@ class System:
     ########################################
     # System-related methods
     ########################################
+    def is_cyclic(self) -> bool:
+        """Determines if the system contains a cycle.
+
+        Returns:
+            bool: A cycle has been detected.
+        """
+        def recurse(task:Task, explored:Set[Task]) -> bool:
+            if task in explored:
+                return True
+
+            for dependency in task.dependencies:
+                explored.add(dependency)
+                if recurse(dependency):
+                    return True
+                
+            return False
+
+        for task in self.get_final_tasks():
+            if recurse(task, set()):
+                return True
+
+        return False
+
     def is_equivalent(self, system:'System') -> bool:
         """Determines if these systems are equivalent.
 
@@ -421,7 +451,7 @@ class System:
 class Sequential(System):
     def __init__(self, system:System):
         name = '{} - Sequential'.format(system.name)
-        super().__init__(name=name, tasks=system.tasks)
+        super().__init__(name=name, tasks=copy.deepcopy(system.tasks))
 
         graph = {task: task.dependencies for task in self.tasks}
         flatten = toposort.toposort_flatten(graph)
@@ -433,7 +463,7 @@ class Sequential(System):
 class Parallelize(System):
     def __init__(self, system:System):
         name = '{} - Parallelized'.format(system.name)
-        super().__init__(name=name, tasks=system.tasks)
+        super().__init__(name=name, tasks=copy.deepcopy(system.tasks))
 
         # Adding arcs everywhere
         for t1, t2 in ((x, y) for x, y in itertools.product(self.tasks, repeat=2) if x.is_connected(y)):

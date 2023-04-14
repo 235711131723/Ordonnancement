@@ -38,13 +38,12 @@ class Task:
         ])
     """
     ID = 1
-    Tasks = {}
+    Tasks = []
 
     def __init__(self,
         instructions:Optional[List[Instruction]] = None,
         dependencies:Optional[Union['Task', Iterable['Task']]]=None,
         name:Optional[Union[str, int]]=None,
-        reset:bool=False
     ):
         self.name = name
         self.instructions = instructions if instructions else []
@@ -53,10 +52,14 @@ class Task:
 
         self.read_domain = self.__get_read_domain()
         self.write_domain = self.__get_write_domain()
-
-        if reset:
-            self.__class__.Tasks = {}
-        self.__class__.Tasks[self.name] = self
+            
+        # Raise an exception if a task with the name already exists
+        # Don't want to bother considering this case
+        try:
+            existing_task = next((x for x in self.__class__.get_tasks() if x == self))
+            raise ValueError('A task {} already exists.'.format(existing_task))
+        except StopIteration:
+            self.__class__.Tasks.append(self)
 
     def __repr__(self) -> str:
         return 'Task({})'.format(self.name)
@@ -82,14 +85,23 @@ class Task:
     @name.setter
     def name(self, name:Optional[Union[str, int]]=None):
         """Increment the ID if no name is given.
-        Otherwise, if the name is an integer, reset the ID counter as the name."""
+        Otherwise, if the name is an integer, reset the ID counter as the name.
+        
+        Raises:
+            ValueError: When a task with the same name already exists. Don't want to bother trying to consider this case."""
 
+        # If no name has been given,
+        # use the current incremented counter
         if name is None:
             name = self.__class__.ID
             self.__class__.ID += 1
+        # Else if an integer has been given,
+        # reset the counter to the name
         else:
             if isinstance(name, int):
                 self.__class__.ID = name
+        # Else just use it as given
+        
         self._name = name
 
     def execute(self, verbose:bool=True):
@@ -241,15 +253,6 @@ class Task:
         ]
 
         return not (conditions[0] or conditions[1])
-
-    @staticmethod
-    def get_tasks() -> List['Task']:
-        """Return all the tasks stored automatically in the dict.
-
-        Returns:
-            List['Task']: The list of every tasks.
-        """
-        return list(Task.Tasks.values())
     
     def show(self):
         print('Task :', self)
@@ -259,3 +262,18 @@ class Task:
         pprint(self.write_domain)
         print('Instructions :')
         pprint([str(instruction) for instruction in self.instructions], expand_all=True)
+
+    @staticmethod
+    def get_tasks() -> List['Task']:
+        """Return all the tasks stored automatically in the dict.
+
+        Returns:
+            List['Task']: The list of every tasks.
+        """
+        return list(Task.Tasks)
+    
+    @staticmethod
+    def reset():
+        """Empty the list containing every tasks.
+        """
+        Task.Tasks = []
