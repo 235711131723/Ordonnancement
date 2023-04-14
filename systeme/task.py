@@ -57,7 +57,7 @@ class Task:
         # Don't want to bother considering this case
         try:
             existing_task = next((x for x in self.__class__.get_tasks() if x == self))
-            raise ValueError('A task {} already exists.'.format(existing_task))
+            raise ValueError('{} already exists.'.format(existing_task))
         except StopIteration:
             self.__class__.Tasks.append(self)
 
@@ -68,11 +68,15 @@ class Task:
         return hash(self.name)
 
     def __eq__(self, o:Any) -> bool:
+        """__hash__ and __eq__ are needed by instances of this class
+        to be used in set().
+        """
         if not isinstance(o, Task):
             return False
         return self.name == o.name
 
     def __lt__(self, o:Any) -> bool:
+        """Needed for topological sorting."""
         if not isinstance(o, Task):
             return False
 
@@ -264,8 +268,8 @@ class Task:
         pprint([str(instruction) for instruction in self.instructions], expand_all=True)
 
     @staticmethod
-    def get_tasks() -> List['Task']:
-        """Return all the tasks stored automatically in the dict.
+    def get_all_tasks() -> List['Task']:
+        """Return all the tasks stored automatically in the dedicated data structure.
 
         Returns:
             List['Task']: The list of every tasks.

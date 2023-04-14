@@ -32,38 +32,28 @@ class System:
     - Deterministic
     - Consistent (= every history of variables must be equal)
     - Acyclic (= no cycle shall ever be found)
+    - Immutable (= no task shall ever be added or removed during its execution)
     """
 
     def __init__(self, name:str='System', tasks:Optional[List[Task]]=None):
         self.name = name
+        self.tasks = tasks if tasks else []
+        if not self.is_deterministic():
+            raise RuntimeError("The system is not determined.")
+        if self.is_cyclic():
+            raise RuntimeError("The system is cyclic.")
 
-        self.tasks = []
-        tasks = tasks if tasks else []
-        for task in tasks:
-            self.add_task(task)
-
-        self.executed = False
         self.time = None
+        self.times = []
+
         self.history = {}
+        self.histories = []
 
         self.executions = 0
-        self.times = []
-        self.histories = []
 
     ########################################
     # Tasks
     ########################################
-    def add_task(self, task:Task):
-        try:
-            existing_task = next((t for t in self.tasks if t == task))
-            self.tasks.remove(existing_task)
-        except StopIteration:
-            pass
-
-        self.tasks.append(task)
-        if not self.is_deterministic():
-            raise RuntimeError("The system is not determined.")
-
     def get_memory_cells(self) -> Set[Variable]:
         """Get variables used by every tasks.
 
@@ -80,6 +70,10 @@ class System:
     ########################################
     # System-related methods
     ########################################
+    @property
+    def executed(self) -> bool:
+        return self.executions > 0
+
     def is_cyclic(self) -> bool:
         """Determines if the system contains a cycle.
 
@@ -92,7 +86,7 @@ class System:
 
             for dependency in task.dependencies:
                 explored.add(dependency)
-                if recurse(dependency):
+                if recurse(dependency, explored):
                     return True
                 
             return False
@@ -111,7 +105,6 @@ class System:
         
         Raises:
             RuntimeError: Raise when the systems have not been runned once.
-
         
         Returns:
             bool: A boolean indicating their equivalency.
@@ -382,15 +375,13 @@ class System:
         self.reset_tasks_state()
 
     def save_history(self):
-        """Save the last state of variables.
-
-        Also save them in dedicated arrays for future analysis.
+        """Save the last state of variables and the time elapsed.
+        Both of them are appended to their respective list for later.
         """
         self.history = {cell.name: cell for cell in copy.deepcopy(self.get_memory_cells())}
-        self.executed = True
+        self.histories.append(self.history)
 
         self.executions += 1
-        self.histories.append(self.history)
         self.times.append(self.time)
 
     def run(self, loops:int=1, verbose:bool=True):
@@ -432,6 +423,7 @@ class System:
 
             self.reset()
             with timer() as measure_time:
+                # Execute in parallel the algorithm for disconnected graphs.
                 threads = []
                 for block in self.disconnected_final_tasks():
                     thread = threading.Thread(target=execute_tasks_parallel, args=(block,))
@@ -454,6 +446,7 @@ class Sequential(System):
         super().__init__(name=name, tasks=copy.deepcopy(system.tasks))
 
         graph = {task: task.dependencies for task in self.tasks}
+        # If needed, to 'compare' tasks, sort them by their name, as implemented in Task().
         flatten = toposort.toposort_flatten(graph)
         for i in range(0, len(flatten) - 1):
             flatten[i+1].dependencies = flatten[i]
