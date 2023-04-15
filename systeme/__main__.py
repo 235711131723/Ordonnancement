@@ -72,7 +72,7 @@ def main():
         if args.test:
             console.rule('Test')
             parallel = Parallelize(system)
-            parallel.run(loops=args.loops, verbose=False)
+            parallel.run(loops=10, verbose=False)
             if not parallel.are_histories_equal():
                 print('The test is [red bold]invalid[/red bold].')
                 print('Histories :')
