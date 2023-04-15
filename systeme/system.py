@@ -38,10 +38,10 @@ class System:
     def __init__(self, name:str='System', tasks:Optional[List[Task]]=None):
         self.name = name
         self.tasks = tasks if tasks else []
-        if not self.is_deterministic():
-            raise RuntimeError("The system is not determined.")
         if self.is_cyclic():
             raise RuntimeError("The system is cyclic.")
+        if not self.is_deterministic():
+            raise RuntimeError("The system is not determined.")
 
         self.time = None
         self.times = []
@@ -80,21 +80,26 @@ class System:
         Returns:
             bool: A cycle has been detected.
         """
-        def recurse(task:Task, explored:Set[Task]) -> bool:
-            if task in explored:
-                return True
+        def recurse(task:Task, explored:Set[Task], tracking:Set[Task]) -> bool:
+            explored.add(task)
+            tracking.add(task)
 
             for dependency in task.dependencies:
-                explored.add(dependency)
-                if recurse(dependency, explored):
+                if dependency not in explored:
+                    if recurse(dependency, explored, tracking):
+                        return True
+                elif dependency in tracking:
                     return True
-                
+
+            tracking.remove(task)
             return False
 
-        for task in self.get_final_tasks():
-            if recurse(task, set()):
-                return True
-
+        explored = set()
+        tracking = set()
+        for task in self.tasks:
+            if task not in explored:
+                if recurse(task, explored, tracking):
+                    return True
         return False
 
     def is_equivalent(self, system:'System') -> bool:

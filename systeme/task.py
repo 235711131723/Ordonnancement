@@ -56,7 +56,7 @@ class Task:
         # Raise an exception if a task with the name already exists
         # Don't want to bother considering this case
         try:
-            existing_task = next((x for x in self.__class__.get_tasks() if x == self))
+            existing_task = next((x for x in self.__class__.get_all_tasks() if x == self))
             raise ValueError('{} already exists.'.format(existing_task))
         except StopIteration:
             self.__class__.Tasks.append(self)
