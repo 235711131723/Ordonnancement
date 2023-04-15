@@ -25,6 +25,8 @@ def parse_args():
     parser.add_argument('--parallelize', '-p', action='store_true', help='Run the system as parallelized.')
 
     parser.add_argument('--view', '-v', action='store_true', help='View generated graphs.')
+
+    parser.add_argument('--debug', '-d', action='store_true', help='Show full exception when it occurs.')
     args = parser.parse_args()
 
     if args.loops <= 0:
@@ -108,7 +110,8 @@ def main():
                 print('The parallelized and the sequential systems are [red bold]not equivalent[/red bold].')
 
     except (RuntimeError, ValueError) as e:
-        print_exception(e)
+        if args.debug:
+            print_exception(e)
         print('[red]ERROR: [bold]{}[/bold][/red] '.format(e))
     except KeyboardInterrupt:
         pass
